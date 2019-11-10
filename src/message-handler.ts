@@ -19,9 +19,9 @@ export class MessageReqHandler {
     ) {
       try {
         const result = await this.sendImageResponse(this.reqBody.MediaUrl0);
-        if (!result) throw Error();
+        if (!result) throw Error('Unknown error sending image');
       } catch (e) {
-        console.error(JSON.stringify(e));
+        console.error(`Error sending message: ${JSON.stringify(e)}`);
         return this.formatResponse('I got your image, but there was trouble processing it!');
       }
       return this.formatResponse('Thanks for the image!');
@@ -34,15 +34,23 @@ export class MessageReqHandler {
     return responseMessage.toString();
   }
 
-  private async sendImageResponse(mediaUrl: string): Promise<MessageInstance> {
-    const client: Twilio = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+  private async sendImageResponse(mediaUrl: string): Promise<MessageInstance | undefined> {
+    let client: Twilio;
+    try {
+      client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+    } catch (e) {
+      console.error(`Error instantiating client: ${JSON.stringify(e)}`);
+      throw e;
+    }
     const messageOpts: MessageListInstanceCreateOptions = {
       to: this.reqBody.From,
       from: this.reqBody.To,
       mediaUrl,
     };
 
-    return await client.messages.create(messageOpts);
+    const result = await client.messages.create(messageOpts);
+    console.log(`Message result: ${JSON.stringify(result)}`);
+    return result;
   }
 
   private validateImageType(mediaContentType: string): boolean {
