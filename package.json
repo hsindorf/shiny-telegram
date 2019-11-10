@@ -9,7 +9,7 @@
     "tsc": "tsc",
     "dev": "ts-node-dev --respawn --transpileOnly ./src/index.ts",
     "prod": "tsc && node ./build/index.js",
-    "start": "npm run prod"
+    "start": "node ./build/index.js"
   },
   "repository": {
     "type": "git",
@@ -30,7 +30,8 @@
   "dependencies": {
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "ts-node-dev": "^1.0.0-pre.44"
+    "ts-node-dev": "^1.0.0-pre.44",
+    "typescript": "^3.7.2"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.146",
@@ -39,7 +40,6 @@
     "@types/jest": "^22.0.0",
     "jest": "^24.9.0",
     "prettier": "^1.19.1",
-    "ts-jest": "^24.1.0",
-    "typescript": "^3.7.2"
+    "ts-jest": "^24.1.0"
   }
 }
