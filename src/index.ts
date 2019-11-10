@@ -11,13 +11,12 @@ const app: express.Application = express();
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
-  console.log(req);
   res.send('Hello world');
 });
 
-app.post('/message', (req, res) => {
+app.post('/message', async (req, res) => {
   const messageHandler = new MessageReqHandler(req.body);
-  res.send(messageHandler.handleRequest());
+  res.send(await messageHandler.handleRequest());
 });
 
 app.listen(PORT, () => {
