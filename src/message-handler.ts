@@ -9,29 +9,67 @@ interface TwilioMessage {
   To: string;
 }
 
+enum ImageType {
+  MEME = 'memes',
+  ANIMAL = 'animals',
+}
+
 export class MessageReqHandler {
   constructor(private reqBody: TwilioMessage) {}
   public async handleRequest(): Promise<string> {
-    if (
-      this.reqBody.MediaContentType0 &&
-      this.reqBody.MediaUrl0 &&
-      this.validateImageType(this.reqBody.MediaContentType0)
-    ) {
-      try {
-        const result = await this.sendImageResponse(this.reqBody.MediaUrl0);
-        if (!result) throw Error('Unknown error sending image');
-      } catch (e) {
-        console.error(`Error sending message: ${JSON.stringify(e)}`);
-        return this.formatResponse('I got your image, but there was trouble processing it!');
+    let responseMessage: string;
+
+    switch (this.reqBody.Body) {
+      case ImageType.ANIMAL:
+      case ImageType.MEME: {
+        if (
+          this.reqBody.MediaContentType0 &&
+          this.reqBody.MediaUrl0 &&
+          this.validateImageType(this.reqBody.MediaContentType0)
+        ) {
+          try {
+            this.saveImage(this.reqBody.Body, this.reqBody.MediaUrl0);
+          } catch (e) {
+            console.error(`Error saving message: ${JSON.stringify(e)}`);
+            responseMessage = 'I got your image, but there was trouble processing it!';
+          }
+          responseMessage = `Thanks for the image! Here's a new image for ${this.reqBody.Body}!`;
+        } else {
+          responseMessage = `Here's an image for ${this.reqBody.Body}!`;
+        }
+
+        try {
+          const newImage = this.getNewImage(this.reqBody.Body);
+          const result = await this.sendImageResponse(newImage);
+          if (!result) throw Error('Unknown error sending image');
+        } catch (e) {
+          console.error(`Error sending message: ${JSON.stringify(e)}`);
+          responseMessage = 'There was an issue getting you a picture, sorry!';
+        }
+        break;
       }
-      return this.formatResponse('Thanks for the image!');
+      default: {
+        responseMessage =
+          'Send a text with the body `memes` or `animals` to get a pic, w/ a pic to add to that category';
+      }
     }
-    return this.formatResponse('Please send an image!');
+
+    return this.formatResponse(responseMessage);
   }
 
   private formatResponse(body: string): string {
     const responseMessage = new twilio.twiml.MessagingResponse().message(body);
     return responseMessage.toString();
+  }
+
+  private saveImage(category: string, imageUrl: string): void {
+    // TODO: save image
+    return;
+  }
+
+  private getNewImage(catgory: string): string {
+    // TODO: get new image from db
+    return 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/025.png';
   }
 
   private async sendImageResponse(mediaUrl: string): Promise<MessageInstance | undefined> {
@@ -42,6 +80,7 @@ export class MessageReqHandler {
       console.error(`Error instantiating client: ${JSON.stringify(e)}`);
       throw e;
     }
+
     const messageOpts: MessageListInstanceCreateOptions = {
       to: this.reqBody.From,
       from: this.reqBody.To,
