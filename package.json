@@ -11,7 +11,8 @@
     "dev": "ts-node-dev --respawn --transpileOnly ./src/index.ts",
     "prod": "npm run build && npm run start",
     "start": "node ./build/index.js",
-    "build": "npm run lint && tsc"
+    "build": "npm run lint && tsc",
+    "migrate": "node-pg-migrate"
   },
   "repository": {
     "type": "git",
@@ -38,6 +39,8 @@
   "dependencies": {
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "node-pg-migrate": "^3.23.3",
+    "pg": "^7.12.1",
     "twilio": "^3.37.0"
   },
   "devDependencies": {

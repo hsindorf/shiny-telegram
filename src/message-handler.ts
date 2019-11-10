@@ -1,5 +1,6 @@
 import twilio, { Twilio } from 'twilio';
 import { MessageListInstanceCreateOptions, MessageInstance } from 'twilio/lib/rest/api/v2010/account/message';
+import { Client } from 'pg';
 
 interface TwilioMessage {
   MediaContentType0?: string;
@@ -15,8 +16,23 @@ enum ImageType {
 }
 
 export class MessageReqHandler {
-  constructor(private reqBody: TwilioMessage) {}
+  dbClient: Client;
+  constructor(private reqBody: TwilioMessage) {
+    try {
+      this.dbClient = new Client({
+        connectionString: process.env.DATABASE_URL,
+      });
+    } catch (e) {
+      throw Error('DB mistake'); // TODO: uncaught
+    }
+  }
   public async handleRequest(): Promise<string> {
+    try {
+      await this.dbClient.connect();
+    } catch (e) {
+      return this.formatResponse('Everything broke');
+    }
+
     let responseMessage: string;
 
     switch (this.reqBody.Body) {
@@ -39,7 +55,9 @@ export class MessageReqHandler {
         }
 
         try {
-          const newImage = this.getNewImage(this.reqBody.Body);
+          const newImage = await this.getNewImage(this.reqBody.Body);
+          console.log('newimage: ' + newImage);
+          if (!newImage) throw Error('No pictures available');
           const result = await this.sendImageResponse(newImage);
           if (!result) throw Error('Unknown error sending image');
         } catch (e) {
@@ -62,20 +80,32 @@ export class MessageReqHandler {
     return responseMessage.toString();
   }
 
-  private saveImage(category: string, imageUrl: string): void {
-    // TODO: save image
+  private async saveImage(category: string, imageUrl: string): Promise<void> {
+    try {
+      const query = 'INSERT INTO images(imageurl, source, category) VALUES($1, $2, $3) ON CONFLICT DO NOTHING;';
+      const values = [imageUrl, this.reqBody.From, category];
+      await this.dbClient.query(query, values);
+      return;
+    } catch (e) {
+      console.error(`Issue adding image to DB: ${JSON.stringify(e)}`);
+      throw e;
+    }
+  }
+
+  private async getNewImage(category: string): Promise<string | undefined> {
+    const query = 'SELECT * FROM images WHERE category = $1 ORDER BY random() LIMIT 1;';
+    const values = [category];
+    const result = await this.dbClient.query(query, values);
+    if (result.rows[0]) {
+      return result.rows[0].imageurl;
+    }
     return;
   }
 
-  private getNewImage(catgory: string): string {
-    // TODO: get new image from db
-    return 'https://assets.pokemon.com/assets/cms2/img/pokedex/full/025.png';
-  }
-
   private async sendImageResponse(mediaUrl: string): Promise<MessageInstance | undefined> {
-    let client: Twilio;
+    let twilioClient: Twilio;
     try {
-      client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+      twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     } catch (e) {
       console.error(`Error instantiating client: ${JSON.stringify(e)}`);
       throw e;
@@ -87,7 +117,7 @@ export class MessageReqHandler {
       mediaUrl,
     };
 
-    const result = await client.messages.create(messageOpts);
+    const result = await twilioClient.messages.create(messageOpts);
     console.log(`Message result: ${JSON.stringify(result)}`);
     return result;
   }
