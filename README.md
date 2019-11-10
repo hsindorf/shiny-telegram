@@ -1,7 +1,7 @@
 # shiny-telegram
 playing with twilio
 
-Right now it's just a basic express app
+`{{baseUrl}}/message` receives a twilio message webhook
 
 ## Setting Up
 
