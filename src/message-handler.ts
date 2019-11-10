@@ -1,5 +1,5 @@
 import twilio, { Twilio } from 'twilio';
-import { MessageListInstanceCreateOptions } from 'twilio/lib/rest/api/v2010/account/message';
+import { MessageListInstanceCreateOptions, MessageInstance } from 'twilio/lib/rest/api/v2010/account/message';
 
 interface TwilioMessage {
   MediaContentType0?: string;
@@ -21,7 +21,8 @@ export class MessageReqHandler {
         const result = await this.sendImageResponse(this.reqBody.MediaUrl0);
         if (!result) throw Error();
       } catch (e) {
-        return this.formatResponse('You sent an image, but there was trouble processing it!');
+        console.error(JSON.stringify(e));
+        return this.formatResponse('I got your image, but there was trouble processing it!');
       }
       return this.formatResponse('Thanks for the image!');
     }
@@ -33,7 +34,7 @@ export class MessageReqHandler {
     return responseMessage.toString();
   }
 
-  private async sendImageResponse(mediaUrl: string): Promise<boolean> {
+  private async sendImageResponse(mediaUrl: string): Promise<MessageInstance> {
     const client: Twilio = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
     const messageOpts: MessageListInstanceCreateOptions = {
       to: this.reqBody.From,
@@ -41,12 +42,7 @@ export class MessageReqHandler {
       mediaUrl,
     };
 
-    try {
-      await client.messages.create(messageOpts);
-      return true;
-    } catch (e) {
-      return false;
-    }
+    return await client.messages.create(messageOpts);
   }
 
   private validateImageType(mediaContentType: string): boolean {
