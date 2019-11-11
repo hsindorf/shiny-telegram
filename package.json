@@ -11,7 +11,8 @@
     "dev": "ts-node-dev --respawn --transpileOnly ./src/index.ts",
     "prod": "npm run build && npm run start",
     "start": "node ./build/index.js",
-    "build": "npm run lint && tsc"
+    "build": "npm run lint && tsc && npm run migrate up",
+    "migrate": "node-pg-migrate"
   },
   "repository": {
     "type": "git",
@@ -38,6 +39,7 @@
   "dependencies": {
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "pg": "^7.12.1",
     "twilio": "^3.37.0"
   },
   "devDependencies": {
@@ -52,6 +54,7 @@
     "eslint-config-prettier": "^6.5.0",
     "eslint-plugin-prettier": "^3.1.1",
     "jest": "^24.9.0",
+    "node-pg-migrate": "^3.23.3",
     "prettier": "^1.19.1",
     "ts-jest": "^24.1.0",
     "ts-node-dev": "^1.0.0-pre.44",
